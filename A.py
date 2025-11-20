@@ -23,70 +23,59 @@ def leer_caso(data, linea_actual):
     return capacidad, objetos, linea_actual 
 
 def reconstruir_solucion(capacidad, objetos, DP):
-    # Reconstrucción esperando las estructuras 1D: DP (valores), last_item y prev_weight
-    # Si se pasa la tabla 2D antigua, esta función no funcionará — usamos la nueva solve
-    dp, last_item, prev_weight = DP
-
+    # Realiza el backtracking para encontrar los indices
+    n = len(objetos)
     items_elegidos_indices = []
     w = capacidad
-
-    # Reconstruimos siguiendo last_item/prev_weight desde w=capacidad hacia atrás
-    while w > 0 and last_item[w] != -1:
-        idx = last_item[w]
-        items_elegidos_indices.append(objetos[idx]['indice'])
-        w = prev_weight[w]
-
+    
+    for i in range(n, 0, -1):
+        if DP[i][w] != DP[i-1][w]:
+            items_elegidos_indices.append(objetos[i-1]['indice'])
+            w -= objetos[i-1]['weight']
+        
+        if w == 0:
+            break
+            
     items_elegidos_indices.reverse()
     return items_elegidos_indices
 
 def solve(capacity, objects, n):
-    # Implementación optimizada: DP 1D y arrays para reconstrucción
-    # dp[w] = mejor valor alcanzable con capacidad w
-    dp = [0] * (capacity + 1)
+    DP = [[0 for _ in range(capacity + 1)] for _ in range(n + 1)]
+    
+    for i in range(1, n+1):
+        weight_i = objects[i-1]["weight"] 
+        value_i = objects[i-1]["value"]
 
-    # Para reconstrucción: last_item[w] = índice del último objeto usado para alcanzar dp[w]
-    # prev_weight[w] = peso anterior (w - weight_of_last_item)
-    last_item = [-1] * (capacity + 1)
-    prev_weight = [-1] * (capacity + 1)
-
-    for i in range(n):
-        weight_i = objects[i]["weight"]
-        value_i = objects[i]["value"]
-
-        # iteramos hacia atrás para no reusar el mismo objeto varias veces
-        for w in range(capacity, weight_i - 1, -1):
-            candidate = dp[w - weight_i] + value_i
-            if candidate > dp[w]:
-                dp[w] = candidate
-                last_item[w] = i
-                prev_weight[w] = w - weight_i
-
-    # Devolvemos las estructuras necesarias para reconstrucción
-    return dp, last_item, prev_weight
+        for w in range(capacity + 1):
+            DP[i][w] = DP[i-1][w]
+            
+            if w >= weight_i:
+                value_included = value_i + DP[i-1][w - weight_i]
+                DP[i][w] = max(DP[i][w], value_included)
+                
+    return DP
 
 def main():
     import sys
     data = sys.stdin.read().splitlines()
     
     linea_actual = 0
-    num_caso = 0
     
-    while True:
+    while linea_actual < len(data):
         capacity, objects, linea_actual = leer_caso(data, linea_actual)
         
         if capacity is None:
             break
             
         n = len(objects)
-
         DP = solve(capacity, objects, n)
-
         indices = reconstruir_solucion(capacity, objects, DP)
         
         print(len(indices))
-        print(' '.join(map(str, indices)))
-        
-        num_caso += 1
+        if indices:
+            print(' '.join(map(str, indices)))
+        else:
+            print()
 
     return
 
